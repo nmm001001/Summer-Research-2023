@@ -24,7 +24,7 @@ def gen_toroidal_coords(D_x, num_landmarks=50, percent=0.1, cohomology_classes=[
     tc = ToroidalCoords(D_x, num_landmarks, distance_matrix=True)
     if plot_tc:
         plot_diagrams(tc.dgms_)
-        plt.savefig(f"{date_now}\\{D_x}_tc_neuron_plot.png")
+        plt.savefig(f"{date_now}/{D_x}_tc_neuron_plot.png")
         plt.close()
     
     toroidal_coords = tc.get_coordinates(perc=percent, cocycle_idxs=cohomology_classes, standard_range=False)
@@ -33,7 +33,7 @@ def gen_toroidal_coords(D_x, num_landmarks=50, percent=0.1, cohomology_classes=[
 def plt_tc_neurons(toroidal_coords, neurons, D_x):
     neu = np.linspace(0,1,neurons)
     plt.scatter(toroidal_coords, neu)
-    plt.savefig(f"{date_now}\\{D_x}_tc_neurons.png")
+    plt.savefig(f"{date_now}/{D_x}_tc_neurons.png")
     plt.close()
     return
 
@@ -48,7 +48,7 @@ def plt_tc_on_circle(toroidal_coords, file_name):
         ys.append(y_val)
 
     plt.scatter(xs,ys)
-    plt.savefig(f"{date_now}\\{file_name}_tc_circular.png")
+    plt.savefig(f"{date_now}/{file_name}_tc_circular.png")
     plt.close()
     return
 

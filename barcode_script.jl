@@ -167,7 +167,7 @@ function generate_DP(num_reg_1_neurons=50)
     VR_P_barcode = barcode(VR_P, dim=dim)
 
     
-    png("$date_now\\DP")
+    png("$date_now/DP")
     
 
     return D_P, VR_P, reg_1_neu_resp_matrix
@@ -194,7 +194,7 @@ function generate_FAT_ID_matrix(rows, cols)
         end
     end
     heatmap(conn_matrix)
-    png("$date_now\\connection_matrix")
+    png("$date_now/connection_matrix")
     return conn_matrix
 end
 
@@ -215,7 +215,7 @@ function generate_DQ(conn_matrix, reg_1_neu_response_matrix)
     VR_Q = eirene(D_Q, record="all", maxdim=dim)
     VR_Q_barcode = barcode(VR_Q, dim=dim)
 
-    png("$date_now\\DQ")
+    png("$date_now/DQ")
 
     return D_Q, VR_Q, reg_2_response_matrix
 end
@@ -273,14 +273,14 @@ end
 function save_barcode(barcode, file_name)
     plot_barcode(barcode, xlims=(0,1))
 
-    png("$date_now\\$file_name")
+    png("$date_now/$file_name")
 end
 
 
 function analogous_bars(VRP, DP, VRQ, DQ, WPQ, witness_bar)
     extension_P, extension_Q = ext.run_similarity_analogous(VR_P = VRP, D_P = DP, VR_Q = VRQ, D_Q = DQ, W_PQ = WP, W_PQ_bar = witness_bar, dim=1 )
     plot_analogous_bars(extension_P, extension_Q, xlims=(0,1))
-    png("$date_now\\analogous_bars")
+    png("$date_now/analogous_bars")
 end
 
 # function execute_trials(iterations, input_neurons, output_neurons, max_output_neurons=0, step_size=0)
