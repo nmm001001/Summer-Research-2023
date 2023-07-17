@@ -195,7 +195,7 @@ function generate_FAT_ID_matrix(rows, cols)
     end
     heatmap(conn_matrix)
     png("Trial folders/$date_now/connection_matrix")
-    return conn_matrix
+    return (conn_matrix)
 end
 
 function generate_DQ(conn_matrix, reg_1_neu_response_matrix)
@@ -293,7 +293,7 @@ end
 
 
 D_P, VR_P, reg_1_neu_resp_matrix = generate_DP(50)
-conn_matrix = generate_FAT_ID_matrix(50,50)
+conn_matrix = generate_FAT_ID_matrix(51,50)
 
 D_Q, VR_Q, reg_2_neu_response_matrix = generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
 
