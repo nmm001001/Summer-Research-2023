@@ -80,7 +80,7 @@ response_function = linear_relu_response_function(max_rate, slope)
 
 function create_folder()
     global date_now = Dates.format(Dates.now(), "YMMSS")
-    mkpath("$date_now")
+    mkpath("Trial folders/$date_now")
     file = open("date.txt", "w")
     write(file, date_now)
     close(file)
@@ -89,44 +89,44 @@ end
 function clean()
     # general garbage collection function, deletes files that will be repeated and cause exceptions during multiple trials
 
-    if isfile("ground_truth.h5")
-        rm("ground_truth.h5")
+    if isfile("h5 files/ground_truth.h5")
+        rm("h5 files/ground_truth.h5")
     end
 
-    if isfile("reg_1_response_matrix.h5")
-        rm("reg_1_response_matrix.h5")
+    if isfile("h5 files/reg_1_response_matrix.h5")
+        rm("h5 files/reg_1_response_matrix.h5")
     end
 
-    if isfile("reg_1_distance.h5")
-        rm("reg_1_distance.h5")
+    if isfile("h5 files/reg_1_distance.h5")
+        rm("h5 files/reg_1_distance.h5")
     end
 
-    if isfile("distance_dp.h5")
-        rm("distance_dp.h5")
+    if isfile("h5 files/distance_dp.h5")
+        rm("h5 files/distance_dp.h5")
     end
 
-    if isfile("reg_2_response_matrix.h5")
-        rm("reg_2_response_matrix.h5")
+    if isfile("h5 files/reg_2_response_matrix.h5")
+        rm("h5 files/reg_2_response_matrix.h5")
     end
 
-    if isfile("conj_rate_distance.h5")
-        rm("conj_rate_distance.h5")
+    if isfile("h5 files/conj_rate_distance.h5")
+        rm("h5 files/conj_rate_distance.h5")
     end
 
-    if isfile("distance_dq.h5")
-        rm("distance_dq.h5")
+    if isfile("h5 files/distance_dq.h5")
+        rm("h5 files/distance_dq.h5")
     end
 
     if isfile("date.txt")
         rm("date.txt")
     end
 
-    if isfile("D_Q.h5")
-        rm("D_Q.h5")
+    if isfile("h5 files/D_Q.h5")
+        rm("h5 files/D_Q.h5")
     end
 
-    if isfile("D_P.h5")
-        rm("D_P.h5")
+    if isfile("h5 files/D_P.h5")
+        rm("h5 files/D_P.h5")
     end
     
 end
@@ -147,20 +147,20 @@ function generate_DP(num_neurons=50)
     
     create_folder()
 
-    h5write("ground_truth.h5", "neurons", reg_1_neurons)
+    h5write("h5 files/ground_truth.h5", "neurons", reg_1_neurons)
     
     path_on_circle = generate_mouse_circle_path(100, 150, 0.02)
     reg_1_neu_resp_matrix = add_normal_random_noise(calculate_neural_response_matrix(reg_1_neurons, path_on_circle, response_function), 0.05, 0.025)
     
-    h5write("reg_1_response_matrix.h5", "raster", copy(transpose(reg_1_neu_resp_matrix)))
+    h5write("h5 files/reg_1_response_matrix.h5", "raster", copy(transpose(reg_1_neu_resp_matrix)))
 
-    global reg_1_raster_path = "reg_1_response_matrix.h5"
-    reg_1_distance_path = "reg_1_distance.h5"
+    global reg_1_raster_path = "h5 files/reg_1_response_matrix.h5"
+    reg_1_distance_path = "h5 files/reg_1_distance.h5"
 
     run(`python compute_similarity_multiprocessing.py $reg_1_raster_path 100 $reg_1_distance_path`)
     
-    D_P = vector_to_symmetric_matrix(h5read("reg_1_distance.h5", "distance"), num_reg_1_neurons)
-    h5write("distance_dp.h5", "distance", D_P)
+    D_P = vector_to_symmetric_matrix(h5read("h5 files/reg_1_distance.h5", "distance"), num_reg_1_neurons)
+    h5write("h5 files/distance_dp.h5", "distance", D_P)
 
     D_P_heatmap = heatmap(D_P)
     
@@ -168,7 +168,7 @@ function generate_DP(num_neurons=50)
     VR_P_barcode = barcode(VR_P, dim=dim)
 
     
-    png("$date_now/DP")
+    png("Trial folders/$date_now/DP")
     
 
     return D_P, VR_P, reg_1_neu_resp_matrix
@@ -195,36 +195,36 @@ function generate_FAT_ID_matrix(rows, cols=num_reg_1_neurons)
         end
     end
     heatmap(conn_matrix)
-    png("$date_now/connection_matrix")
-    return conn_matrix
+    png("Trial folders/$date_now/connection_matrix")
+    return (conn_matrix)
 end
 
 function generate_DQ(conn_matrix, reg_1_neu_response_matrix)
     
     reg_2_response_matrix = add_normal_random_noise(conn_matrix * (reg_1_neu_resp_matrix), 0.05, 0.025)
 
-    h5write("reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
-    global reg_2_raster_path = "reg_2_response_matrix.h5"
-    reg_2_distance_path = "reg_2_distance.h5"
+    h5write("h5 files/reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
+    global reg_2_raster_path = "h5 files/reg_2_response_matrix.h5"
+    reg_2_distance_path = "h5 files/reg_2_distance.h5"
     run(`python compute_similarity_multiprocessing.py $reg_2_raster_path 100 $reg_2_distance_path`)
 
-    D_Q = vector_to_symmetric_matrix(h5read("reg_2_distance.h5", "distance"), num_reg_2_neurons)
-    h5write("distance_dq.h5", "distance", D_Q)
+    D_Q = vector_to_symmetric_matrix(h5read("h5 files/reg_2_distance.h5", "distance"), num_reg_2_neurons)
+    h5write("h5 files/distance_dq.h5", "distance", D_Q)
 
     D_Q_heatmap = heatmap(D_Q)
 
     VR_Q = eirene(D_Q, record="all", maxdim=dim)
     VR_Q_barcode = barcode(VR_Q, dim=dim)
 
-    png("$date_now/DQ")
+    png("Trial folders/$date_now/DQ")
 
     return D_Q, VR_Q, reg_2_response_matrix
 end
 
 function compute_DQP_DPQ()
-    conj_rate_distance_path = "conj_rate_distance.h5"
+    conj_rate_distance_path = "h5 files/conj_rate_distance.h5"
     run(`python cross_similarity_multiprocessing.py $reg_1_raster_path $reg_2_raster_path 100 $conj_rate_distance_path`)
-    DQP = h5read("conj_rate_distance.h5", "distance")
+    DQP = h5read("h5 files/conj_rate_distance.h5", "distance")
     DPQ = copy(transpose(DQP))
     
     return DQP, DPQ
@@ -274,14 +274,14 @@ end
 function save_barcode(barcode, file_name)
     plot_barcode(barcode, xlims=(0,1))
 
-    png("$date_now/$file_name")
+    png("Trial folders/$date_now/$file_name")
 end
 
 
 function analogous_bars(VRP, DP, VRQ, DQ, WPQ, witness_bar)
     extension_P, extension_Q = ext.run_similarity_analogous(VR_P = VRP, D_P = DP, VR_Q = VRQ, D_Q = DQ, W_PQ = WP, W_PQ_bar = witness_bar, dim=1 )
     plot_analogous_bars(extension_P, extension_Q, xlims=(0,1))
-    png("$date_now/analogous_bars")
+    png("Trial folders/$date_now/analogous_bars")
 end
 
 # function execute_trials(iterations, input_neurons, output_neurons, max_output_neurons=0, step_size=0)
