@@ -138,7 +138,8 @@ function generate_mouse_circle_path(num_walks=100, num_steps_per_walk=150, step_
 end
 
 
-function generate_DP(num_reg_1_neurons=50)
+function generate_DP(num_neurons=50)
+    global num_reg_1_neurons = num_neurons
 
     reg_1_neurons = generate_uniform_neurons_on_circle(num_reg_1_neurons)
     
@@ -173,13 +174,13 @@ function generate_DP(num_reg_1_neurons=50)
     return D_P, VR_P, reg_1_neu_resp_matrix
 end
 
-function generate_FAT_ID_matrix(rows, cols)
+function generate_FAT_ID_matrix(rows, cols=num_reg_1_neurons)
     conn_matrix = zeros(rows,cols)
 
-    for col_index in 1:50
+    for col_index in 1:cols
         for row_index in -7:14
             #row = trunc(Int64, mod(col_index + row_index, 51))
-            row = mod(col_index + row_index - 1, cols) + 1
+            row = mod(col_index + row_index - 1, cols)
             if row != 0
                 conn_matrix[row, col_index] = 1.0
             end
@@ -200,7 +201,7 @@ end
 
 function generate_DQ(conn_matrix, reg_1_neu_response_matrix)
     
-    reg_2_response_matrix = add_normal_random_noise(conn_matrix * reg_1_neu_resp_matrix, 0.05, 0.025)
+    reg_2_response_matrix = add_normal_random_noise(conn_matrix * (reg_1_neu_resp_matrix), 0.05, 0.025)
 
     h5write("reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
     global reg_2_raster_path = "reg_2_response_matrix.h5"
@@ -292,8 +293,8 @@ end
 # end
 
 
-D_P, VR_P, reg_1_neu_resp_matrix = generate_DP(50)
-conn_matrix = generate_FAT_ID_matrix(50,50)
+D_P, VR_P, reg_1_neu_resp_matrix = generate_DP(51)
+conn_matrix = generate_FAT_ID_matrix(50)
 
 D_Q, VR_Q, reg_2_neu_response_matrix = generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
 
