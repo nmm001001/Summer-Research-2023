@@ -65,7 +65,7 @@ end
 
 # initialize variables for data simulation
 
-global num_reg_2_neurons = 50
+#global num_reg_2_neurons = 51
 
 # GLOBAL DIMENSION VARIABLE
 global dim = 1
@@ -175,15 +175,14 @@ function generate_DP(num_neurons=50)
 end
 
 function generate_FAT_ID_matrix(rows, cols=num_reg_1_neurons)
+    global num_reg_2_neurons = rows
     conn_matrix = zeros(rows,cols)
 
     for col_index in 1:cols
-        for row_index in -7:14
-            #row = trunc(Int64, mod(col_index + row_index, 51))
-            row = mod(col_index + row_index - 1, cols)
-            if row != 0
-                conn_matrix[row, col_index] = 1.0
-            end
+        for row_offset in -10:9
+            #row = trunc(Int64, mod(col_index + row_index, row))
+            row = mod(col_index + row_offset - 1, rows) + 1
+            conn_matrix[row, col_index] = 1.0
         end
     end
 
@@ -293,8 +292,8 @@ end
 # end
 
 
-D_P, VR_P, reg_1_neu_resp_matrix = generate_DP(51)
-conn_matrix = generate_FAT_ID_matrix(50)
+D_P, VR_P, reg_1_neu_resp_matrix = generate_DP(50)
+conn_matrix = generate_FAT_ID_matrix(60)
 
 D_Q, VR_Q, reg_2_neu_response_matrix = generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
 
