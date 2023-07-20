@@ -1,4 +1,6 @@
-#module barcode_script
+#barcode_script.jl
+
+module barcode_script
 
 
 using WebIO
@@ -19,30 +21,30 @@ using Dates
 using Plots
 using CSV
 
-includet("aux_functions/julia_utilities.jl")
+include("aux_functions/julia_utilities.jl")
 using .julia_utilities
 
 include("aux_functions/Eirene_var.jl")
 using .Eirene_var
 
-includet("aux_functions/extension_method.jl")
+include("aux_functions/extension_method.jl")
 using .ext
 
-# export
-#     find_n_largest_bars,
-#     create_folder,
-#     clean,
-#     generate_mouse_circle_path,
-#     generate_DP,
-#     generate_FAT_ID_matrix,
-#     generate_DQ,
-#     compute_DQP_DPQ,
-#     VR_and_witness_comp,
-#     barcode_VR_Wit_comp,
-#     compute_largest_bar,
-#     save_barcode,
-#     analogous_bars
-# end
+export
+    find_n_largest_bars,
+    create_folder,
+    clean,
+    generate_mouse_circle_path,
+    generate_DP,
+    generate_FAT_ID_matrix,
+    generate_DQ,
+    compute_DQP_DPQ,
+    VR_and_witness_comp,
+    barcode_VR_Wit_comp,
+    compute_largest_bar,
+    save_barcode,
+    analogous_bars
+
 
 # Finds indices of the n largest bars  barcode, which is to be of form Array(Float64, 2)
 function find_n_largest_bars(barcode, n)
@@ -198,9 +200,9 @@ function generate_FAT_ID_matrix(rows, cols=num_reg_1_neurons)
     return (conn_matrix)
 end
 
-function generate_DQ(conn_matrix, reg_1_neu_response_matrix)
+function generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
     
-    reg_2_response_matrix = add_normal_random_noise(conn_matrix * (reg_1_neu_resp_matrix), 0.05, 0.025)
+    reg_2_response_matrix = add_normal_random_noise(conn_matrix * reg_1_neu_resp_matrix, 0.05, 0.025)
 
     h5write("h5 files/reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
     global reg_2_raster_path = "h5 files/reg_2_response_matrix.h5"
@@ -277,11 +279,12 @@ function save_barcode(barcode, file_name)
 end
 
 
-function analogous_bars(VRP, DP, VRQ, DQ, WPQ, witness_bar)
+function analogous_bars(VRP, DP, VRQ, DQ, WP, witness_bar)
     extension_P, extension_Q = ext.run_similarity_analogous(VR_P = VRP, D_P = DP, VR_Q = VRQ, D_Q = DQ, W_PQ = WP, W_PQ_bar = witness_bar, dim=1 )
     plot_analogous_bars(extension_P, extension_Q, xlims=(0,1))
     png("Trial folders/$date_now/analogous_bars")
 end
+
 
 # function execute_trials(iterations, input_neurons, output_neurons, max_output_neurons=0, step_size=0)
 #     for 
@@ -292,58 +295,20 @@ end
 # end
 
 
-D_P, VR_P, reg_1_neu_resp_matrix = generate_DP(50)
-conn_matrix = generate_FAT_ID_matrix(60)
+# D_P, VR_P, reg_1_neu_resp_matrix = generate_DP(50)
+# conn_matrix = generate_FAT_ID_matrix(60)
 
-D_Q, VR_Q, reg_2_neu_response_matrix = generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
+# D_Q, VR_Q, reg_2_neu_response_matrix = generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
 
-DQP, DPQ = compute_DQP_DPQ()
+# DQP, DPQ = compute_DQP_DPQ()
 
-VRP, VRQ, WP, WQ = VR_and_witness_comp(D_P, D_Q, DPQ, DQP)
+# VRP, VRQ, WP, WQ = VR_and_witness_comp(D_P, D_Q, DPQ, DQP)
 
-barcode_VRP, barcode_VRQ, barcode_WP, barcode_WQ = barcode_VR_Wit_comp(VRP, VRQ, WP, WQ)
+# barcode_VRP, barcode_VRQ, barcode_WP, barcode_WQ = barcode_VR_Wit_comp(VRP, VRQ, WP, WQ)
 
-witness_bar = compute_largest_bar(barcode_WP)
+# witness_bar = compute_largest_bar(barcode_WP)
 
-analogous_bars(VR_P, D_P, VR_Q, D_Q, WP, witness_bar)
+# analogous_bars(VR_P, D_P, VR_Q, D_Q, WP, witness_bar)
 
-# #generate region 1 neurons, uniformly chosen on arbitrary unit circle (radius = 1)
-# rm("ground_truth.h5")
-# reg_1_neurons = generate_uniform_neurons_on_circle(num_reg_1_neurons)
-# h5write("ground_truth.h5", "neurons", reg_1_neurons)
 
-# # generate random circular walk 
-# path_on_circle = generate_random_skipping_circular_walk(num_walks, num_steps_per_walk, step_size_range)
-
-# # region 1 neural response matrix
-# reg_1_neu_resp_matrix = add_normal_random_ noise(calculate_neural_response_matrix(reg_1_neurons, path_on_circle, response_function))
-
-# # heatmap of region 1 neural response matrix, dont really need it
-# # using Plots
-# # heatmap(reg_1_neu_resp_matrix)
-
-# #put these into an if statement along with all other rm functions
-# rm("reg_1_response_matrix.h5")
-# rm("reg_1_distance.h5")
-# rm("distance_matrix.h5")
-
-# h5write("reg_1_response_matrix.h5", "raster", copy(transpose(reg_1_neu_resp_matrix)))
-
-# # similarity multiprocessing for reg 1
-# reg_1_raster_path = "reg_1_response_matrix.h5"
-# reg_1_distance_path = "reg_1_distance.h5"
-# run(`python compute_similarity_multiprocessing.py $reg_1_raster_path 100 $reg_1_distance_path`)
-
-# # create DP matrix
-# D_P = h5read("reg_1_distance.h5", "distance")
-# D_P = vector_to_symmetric_matrix(D_P, num_reg_1_neurons)
-# h5write("distance_matrix.h5", "distance", D_P)
-
-# #Vietoris-Rips
-# dim = 1
-# VR_P = eirene(D_P, record = "all", maxdim = dim)
-
-# # generate barcode for Vietoris-Rips, maybe run the n-largest-bars function on it 
-# barcode_VR_P = barcode(VR_P, dim=1)
-# plot_barcode(barcode_VR_P, xlims=(0,1)) # get this so that it saves a png of the barcode into an accesible folder
-
+end #end of module
