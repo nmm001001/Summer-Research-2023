@@ -200,27 +200,53 @@ function generate_FAT_ID_matrix(rows, cols=num_reg_1_neurons)
     return (conn_matrix)
 end
 
-function generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
+function generate_DQ(conn_matrix, reg_1_neu_resp_matrix, num_conn_matrix=1, conn_matrix_2=nothing)
+    if num_conn_matrix == 1
+        reg_2_response_matrix = add_normal_random_noise(conn_matrix * reg_1_neu_resp_matrix, 0.05, 0.025)
+
+        h5write("h5 files/reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
+        global reg_2_raster_path = "h5 files/reg_2_response_matrix.h5"
+        reg_2_distance_path = "h5 files/reg_2_distance.h5"
+        run(`python compute_similarity_multiprocessing.py $reg_2_raster_path 100 $reg_2_distance_path`)
+
+        D_Q = vector_to_symmetric_matrix(h5read("h5 files/reg_2_distance.h5", "distance"), num_reg_2_neurons)
+        h5write("h5 files/distance_dq.h5", "distance", D_Q)
+
+        D_Q_heatmap = heatmap(D_Q)
+
+        VR_Q = eirene(D_Q, record="all", maxdim=dim)
+        VR_Q_barcode = barcode(VR_Q, dim=dim)
+
+        png("Trial folders/$date_now/DQ")
+
+        return D_Q, VR_Q, reg_2_response_matrix
+    end
     
-    reg_2_response_matrix = add_normal_random_noise(conn_matrix * reg_1_neu_resp_matrix, 0.05, 0.025)
+    if (num_conn_matrix == 2) && (conn_matrix_2 != nothing) 
+        reg_2_response_matrix = add_normal_random_noise(conn_matrix * reg_1_neu_resp_matrix, 0.05, 0.025)
+        reg_2_response_matrix = add_normal_random_noise(conn_matrix_2 * reg_2_response_matrix, 0.05, 0.025)
 
-    h5write("h5 files/reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
-    global reg_2_raster_path = "h5 files/reg_2_response_matrix.h5"
-    reg_2_distance_path = "h5 files/reg_2_distance.h5"
-    run(`python compute_similarity_multiprocessing.py $reg_2_raster_path 100 $reg_2_distance_path`)
+        h5write("h5 files/reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
+        global reg_2_raster_path = "h5 files/reg_2_response_matrix.h5"
+        reg_2_distance_path = "h5 files/reg_2_distance.h5"
+        run(`python compute_similarity_multiprocessing.py $reg_2_raster_path 100 $reg_2_distance_path`)
 
-    D_Q = vector_to_symmetric_matrix(h5read("h5 files/reg_2_distance.h5", "distance"), num_reg_2_neurons)
-    h5write("h5 files/distance_dq.h5", "distance", D_Q)
+        D_Q = vector_to_symmetric_matrix(h5read("h5 files/reg_2_distance.h5", "distance"), num_reg_2_neurons)
+        h5write("h5 files/distance_dq.h5", "distance", D_Q)
 
-    D_Q_heatmap = heatmap(D_Q)
+        D_Q_heatmap = heatmap(D_Q)
 
-    VR_Q = eirene(D_Q, record="all", maxdim=dim)
-    VR_Q_barcode = barcode(VR_Q, dim=dim)
+        VR_Q = eirene(D_Q, record="all", maxdim=dim)
+        VR_Q_barcode = barcode(VR_Q, dim=dim)
 
-    png("Trial folders/$date_now/DQ")
+        png("Trial folders/$date_now/DQ")
 
-    return D_Q, VR_Q, reg_2_response_matrix
+        return D_Q, VR_Q, reg_2_response_matrix
+    end
 end
+
+
+
 
 function compute_DQP_DPQ()
     conj_rate_distance_path = "h5 files/conj_rate_distance.h5"
@@ -295,20 +321,21 @@ end
 # end
 
 
-# D_P, VR_P, reg_1_neu_resp_matrix = generate_DP(50)
-# conn_matrix = generate_FAT_ID_matrix(60)
+D_P, VR_P, reg_1_neu_resp_matrix = generate_DP(50)
+conn_matrix = generate_FAT_ID_matrix(60)
+conn_matrix2 = generate_FAT_ID_matrix(50,60)
 
-# D_Q, VR_Q, reg_2_neu_response_matrix = generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
+D_Q, VR_Q, reg_2_neu_response_matrix = generate_DQ(conn_matrix, reg_1_neu_resp_matrix, 2, conn_matrix2)
 
-# DQP, DPQ = compute_DQP_DPQ()
+DQP, DPQ = compute_DQP_DPQ()
 
-# VRP, VRQ, WP, WQ = VR_and_witness_comp(D_P, D_Q, DPQ, DQP)
+VRP, VRQ, WP, WQ = VR_and_witness_comp(D_P, D_Q, DPQ, DQP)
 
-# barcode_VRP, barcode_VRQ, barcode_WP, barcode_WQ = barcode_VR_Wit_comp(VRP, VRQ, WP, WQ)
+barcode_VRP, barcode_VRQ, barcode_WP, barcode_WQ = barcode_VR_Wit_comp(VRP, VRQ, WP, WQ)
 
-# witness_bar = compute_largest_bar(barcode_WP)
+witness_bar = compute_largest_bar(barcode_WP)
 
-# analogous_bars(VR_P, D_P, VR_Q, D_Q, WP, witness_bar)
+analogous_bars(VR_P, D_P, VR_Q, D_Q, WP, witness_bar)
 
 
 end #end of module
