@@ -43,9 +43,10 @@ export
     barcode_VR_Wit_comp,
     compute_largest_bar,
     save_barcode,
-    analogous_bars
-    generate_antipodal_conn
-end
+    analogous_bars,
+    generate_antipodal_conn,
+    generate_conn_matrix
+
 
 
 # Finds indices of the n largest bars  barcode, which is to be of form Array(Float64, 2)
@@ -79,7 +80,7 @@ global dim = 1
 
 # response function 
 max_rate = 1
-slope = -50
+slope = -25
 response_function = linear_relu_response_function(max_rate, slope)
 
 function create_folder()
@@ -199,7 +200,7 @@ function generate_FAT_ID_matrix(rows, cols=num_reg_1_neurons)
         end
     end
     heatmap(conn_matrix)
-    png("Trial folders/$date_now/connection_matrix")
+    png("Trial folders/$date_now/connection_matrix_$num_reg_2_neurons")
     return (conn_matrix)
 end
 
@@ -238,7 +239,7 @@ end
 function generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
     
     reg_2_response_matrix = add_normal_random_noise(conn_matrix * reg_1_neu_resp_matrix, 0.05, 0.025)
-    rows = size(reg_2_response_matrix, 1)
+    global rows = size(reg_2_response_matrix, 1)
 
     if isfile("h5 files/reg_2_response_matrix.h5")
         rm("h5 files/reg_2_response_matrix.h5")
@@ -255,7 +256,7 @@ function generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
         D_Q_heatmap = heatmap(D_Q)
 
         VR_Q = eirene(D_Q, record="all", maxdim=dim)
-        VR_Q_barcode = barcode(VR_Q, dim=dim)
+        
 
         png("Trial folders/$date_now/DQ_$rows")
 
@@ -276,7 +277,7 @@ function generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
         D_Q_heatmap = heatmap(D_Q)
 
         VR_Q = eirene(D_Q, record="all", maxdim=dim)
-        VR_Q_barcode = barcode(VR_Q, dim=dim)
+        
 
         png("Trial folders/$date_now/DQ_$rows")
 
@@ -309,18 +310,60 @@ function generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
     # end
 end
 
-function generate_antipodal_conn(rows, connrow, conncol)
-    conn_matrix = I(rows, rows)
-    conn_matrix[connrow, conncol] = 1.0
+function generate_antipodal_conn(rows, connrow)
+    conn_matrix = Matrix{Float64}(I, rows, rows)
+    conn_matrix[connrow, mod(connrow + (rows/2), rows)] = 1.0
+    for row in 1:rows
+        for col in 1:rows
+            if conn_matrix[row,col] != 1.0
+                conn_matrix[row, col] = -1.0
+            end
+        end
+    end
+
+    heatmap(conn_matrix)
+    png("Trial folders/$date_now/connection_matrix")
     return conn_matrix
 end
 
+function generate_conn_matrix(rows, cols, range=5)
+    global num_reg_2_neurons = rows
+    conn_matrix = zeros(rows, cols)
+    
+    for row_index in 1:rows
+        center = rand(1:cols)
+        for index in -range:range
+            col_index = mod((center + index), cols)
+            if col_index == 0
+                conn_matrix[row_index, col_index + 1] = 1.0
+            else
+                conn_matrix[row_index, col_index] = 1.0
+            end
+        end
+    end
+    
+    for row_index in 1:rows
+        for col_index in 1:cols
+            if conn_matrix[row_index, col_index] != 1.0
+                conn_matrix[row_index, col_index] = -1.0
+            end
+        end
+    end
+
+    heatmap(conn_matrix)
+    png("Trial folders/$date_now/connection_matrix_($num_reg_2_neurons)")
+    return (conn_matrix)
+end
 
 
 function compute_DQP_DPQ()
-    conj_rate_distance_path = "h5 files/conj_rate_distance.h5"
+    if isfile("h5 files/conj_rate_distance_($rows).h5")
+        rm("h5 files/conj_rate_distance_($rows).h5")
+    end
+    conj_rate_distance_path = "h5 files/conj_rate_distance_($rows).h5"
+    
     run(`python cross_similarity_multiprocessing.py $reg_1_raster_path $reg_2_raster_path 100 $conj_rate_distance_path`)
-    DQP = h5read("h5 files/conj_rate_distance.h5", "distance")
+    DQP = h5read("h5 files/conj_rate_distance_($rows).h5", "distance")
     DPQ = copy(transpose(DQP))
     
     return DQP, DPQ
@@ -340,9 +383,11 @@ function barcode_VR_Wit_comp(VRP, VRQ, WP, WQ)
     save_barcode(barcode_VRP, "barcode_VRP")
 
     barcode_WP = barcode(WP["eirene_output"], dim=dim)
+    print(length(barcode_WP))
     save_barcode(barcode_WP, "barcode_WP")
 
     barcode_WQ = barcode(WQ["eirene_output"], dim=dim)
+    print(length(barcode_WQ))
     save_barcode(barcode_WQ, "barcode_WQ")
 
     barcode_VRQ = barcode(VRQ, dim=dim)
@@ -370,14 +415,15 @@ end
 function save_barcode(barcode, file_name)
     plot_barcode(barcode, xlims=(0,1))
 
-    png("Trial folders/$date_now/$file_name")
+    png("Trial folders/$date_now/($file_name)_($rows")
+
 end
 
 
 function analogous_bars(VRP, DP, VRQ, DQ, WP, witness_bar)
     extension_P, extension_Q = ext.run_similarity_analogous(VR_P = VRP, D_P = DP, VR_Q = VRQ, D_Q = DQ, W_PQ = WP, W_PQ_bar = witness_bar, dim=1 )
     plot_analogous_bars(extension_P, extension_Q, xlims=(0,1))
-    png("Trial folders/$date_now/analogous_bars")
+    png("Trial folders/$date_now/analogous_bars_$rows")
 end
 
 

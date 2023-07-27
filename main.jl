@@ -45,15 +45,14 @@ end
 
 
 DP, VRP, reg_1_neu_resp_matrix = generate_DP(50) #input neurons
-               
-conn_matrix1 = generate_antipodal_conn(50, 10, 25) #hidden layers
-conn_matrix2 = generate_FAT_ID_matrix(60,100)
-conn_matrix3 = generate_FAT_ID_matrix(50,60)
+            
+
+conn_matrix1 = generate_conn_matrix(100, 50)  #hidden layers
+conn_matrix2 = generate_conn_matrix(60,100)
+conn_matrix3 = generate_conn_matrix(50,60)
 
 
-DQ1, VRQ1, reg_2_neu_response_matrix1 = generate_DQ(conn_matrix1, reg_1_neu_resp_matrix) # passing the information forward
-DQ2, VRQ2, reg_2_neu_response_matrix2 = generate_DQ(conn_matrix2, reg_2_neu_response_matrix1)
-DQ3, VRQ3, reg_2_neu_response_matrix3 = generate_DQ(conn_matrix3, reg_2_neu_response_matrix2)
+DQ1, VRQ, reg_2_neu_response_matrix1 = generate_DQ(conn_matrix1, reg_1_neu_resp_matrix) # passing the information forward
 
 DQP, DPQ = compute_DQP_DPQ()
 
@@ -64,6 +63,37 @@ barcode_VRP, barcode_VRQ, barcode_WP, barcode_WQ = barcode_VR_Wit_comp(VRP, VRQ,
 witness_bar = compute_largest_bar(barcode_WP)
 
 analogous_bars(VRP, DP, VRQ, DQ1, WP, witness_bar)
+
+#######################################################
+
+
+DQ2, VRQ, reg_2_neu_response_matrix2 = generate_DQ(conn_matrix2, reg_2_neu_response_matrix1)
+
+DQP, DPQ = compute_DQP_DPQ()
+
+VRP, VRQ, WP, WQ = VR_and_witness_comp(DP, DQ2, DPQ, DQP)
+
+barcode_VRP, barcode_VRQ, barcode_WP, barcode_WQ = barcode_VR_Wit_comp(VRP, VRQ, WP, WQ)
+
+witness_bar = compute_largest_bar(barcode_WP)
+
+analogous_bars(VRP, DP, VRQ, DQ2, WP, witness_bar)
+
+# ###########################################################
+
+DQ3, VRQ, reg_2_neu_response_matrix3 = generate_DQ(conn_matrix3, reg_2_neu_response_matrix2)
+
+DQP, DPQ = compute_DQP_DPQ()
+
+VRP, VRQ, WP, WQ = VR_and_witness_comp(DP, DQ3, DPQ, DQP)
+
+barcode_VRP, barcode_VRQ, barcode_WP, barcode_WQ = barcode_VR_Wit_comp(VRP, VRQ, WP, WQ)
+
+witness_bar = compute_largest_bar(barcode_WP)
+
+analogous_bars(VRP, DP, VRQ, DQ3, WP, witness_bar)
+
+############################################################
 
 run(`python main_python.py`)
 
