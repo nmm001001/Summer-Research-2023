@@ -86,7 +86,8 @@ response_function = linear_relu_response_function(max_rate, slope)
 function create_folder()
     global date_now = Dates.format(Dates.now(), "YMMSS")
     mkpath("Trial folders/$date_now")
-    file = open("date.txt", "w")
+    mkpath("Trial folders/$date_now/h5_files")
+    file = open("Trial folders/date.txt", "w")
     write(file, date_now)
     close(file)
 end
@@ -146,36 +147,23 @@ end
 
 function generate_DP(num_neurons=50)
     global num_reg_1_neurons = num_neurons
+    rm("output_pop_size_50/trial_1/barcode/distance_dp.h5")
 
-    reg_1_neurons = generate_uniform_neurons_on_circle(num_reg_1_neurons)
-    
-    clean()
-    
-    create_folder()
+    global reg_1_raster_path = "output_pop_size_50/trial_1/learning/step_1/reg_1_response_matrix.h5"
+    reg_1_distance_path = "output_pop_size_50/trial_1/learning/step_1/reg_1_distance.h5"
 
-    h5write("h5 files/ground_truth.h5", "neurons", reg_1_neurons)
+    run(`python3 compute_similarity_multiprocessing.py $reg_1_raster_path 100 $reg_1_distance_path`)
     
-    path_on_circle = generate_mouse_circle_path(100, 150, 0.02)
-    reg_1_neu_resp_matrix = add_normal_random_noise(calculate_neural_response_matrix(reg_1_neurons, path_on_circle, response_function), 0.05, 0.025)
-    
-    h5write("h5 files/reg_1_response_matrix.h5", "raster", copy(transpose(reg_1_neu_resp_matrix)))
-
-    global reg_1_raster_path = "h5 files/reg_1_response_matrix.h5"
-    reg_1_distance_path = "h5 files/reg_1_distance.h5"
-
-    run(`python compute_similarity_multiprocessing.py $reg_1_raster_path 100 $reg_1_distance_path`)
-    
-    D_P = vector_to_symmetric_matrix(h5read("h5 files/reg_1_distance.h5", "distance"), num_reg_1_neurons)
-    h5write("h5 files/distance_dp.h5", "distance", D_P)
+    D_P = vector_to_symmetric_matrix(h5read("output_pop_size_50/trial_1/learning/step_1/reg_1_distance.h5", "distance"), num_reg_1_neurons)
+    mkpath("output_pop_size_50/trial_1/barcode")
+    h5write("output_pop_size_50/trial_1/barcode/distance_dp.h5", "distance", D_P)
 
     D_P_heatmap = heatmap(D_P)
     
     VR_P = eirene(D_P, record="all", maxdim=dim)
-    VR_P_barcode = barcode(VR_P, dim=dim)
 
-    
-    png("Trial folders/$date_now/DP")
-    
+    png("output_pop_size_50/trial_1/barcode/DP")
+    reg_1_neu_resp_matrix = h5read("output_pop_size_50/trial_1/learning/step_1/reg_1_response_matrix.h5", "raster")
 
     return D_P, VR_P, reg_1_neu_resp_matrix
 end
@@ -204,110 +192,32 @@ function generate_FAT_ID_matrix(rows, cols=num_reg_1_neurons)
     return (conn_matrix)
 end
 
-# function generate_scattered_matrix(rows, cols, length)
-#     global num_reg_2_neurons = rows
-#     # Initialize an nxm matrix filled with zeros
-#     conn_matrix = zeros(rows, cols)
-    
-#     # Generate a random column index for the starting point
-#     start_col = rand(1:cols)
-    
-#     # Place x consecutive 1's centered at the random column index
-#     for i in 1:rows
-#         start_idx = start_col - length ÷ 2 + (i % length)  # Compute the starting index
-#         for j in 0:length-1
-#             # Wrap around if the index goes beyond the matrix bounds
-#             col_idx = (start_idx + j - 1) % cols + 1
-#             conn_matrix[i, col_idx] = 1
-#         end
-#     end
-
-#     for row_index in 1:rows
-#         for col_index in 1:cols
-#             if conn_matrix[row_index, col_index] != 1
-#                 conn_matrix[row_index, col_index] = -1
-#             end
-#         end
-#     end
-#     heatmap(conn_matrix)
-#     png("Trial folders/$date_now/connection_matrix")
-#     return (conn_matrix)
-# end
-
 
 
 function generate_DQ(conn_matrix, reg_1_neu_resp_matrix)
     
-    reg_2_response_matrix = add_normal_random_noise(conn_matrix * reg_1_neu_resp_matrix, 0.05, 0.025)
+    reg_2_response_matrix = add_normal_random_noise(conn_matrix * transpose(reg_1_neu_resp_matrix), 0.05, 0.025)
     global rows = size(reg_2_response_matrix, 1)
 
-    if isfile("h5 files/reg_2_response_matrix.h5")
-        rm("h5 files/reg_2_response_matrix.h5")
-        rm("h5 files/distance_dq.h5")
+       
     
-        h5write("h5 files/reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
-        global reg_2_raster_path = "h5 files/reg_2_response_matrix.h5"
-        reg_2_distance_path = "h5 files/reg_2_distance.h5"
-        run(`python compute_similarity_multiprocessing.py $reg_2_raster_path 100 $reg_2_distance_path`)
+    #h5write("output_pop_size_50/trial_1/barcode/reg_2_response_matrix_$rows.h5", "raster", copy(transpose(reg_2_response_matrix)))
+    global reg_2_raster_path = "output_pop_size_50/trial_1/barcode/reg_2_response_matrix_$rows.h5"
+    reg_2_distance_path = "output_pop_size_50/trial_1/barcode/reg_2_distance_$rows.h5"
+    run(`python3 compute_similarity_multiprocessing.py $reg_2_raster_path 100 $reg_2_distance_path`)
 
-        D_Q = vector_to_symmetric_matrix(h5read("h5 files/reg_2_distance.h5", "distance"), rows)
-        h5write("h5 files/distance_dq.h5", "distance", D_Q)
+    D_Q = vector_to_symmetric_matrix(h5read("output_pop_size_50/trial_1/barcode/reg_2_distance_$rows.h5", "distance"), rows)
+    #h5write("output_pop_size_50/trial_1/barcode/distance_dq_$rows.h5", "distance", D_Q)
 
-        D_Q_heatmap = heatmap(D_Q)
+    D_Q_heatmap = heatmap(D_Q)
 
-        VR_Q = eirene(D_Q, record="all", maxdim=dim)
+    VR_Q = eirene(D_Q, record="all", maxdim=dim)
         
 
-        png("Trial folders/$date_now/DQ_$rows")
+    png("output_pop_size_50/trial_1/barcode/DQ_$rows")
 
-        return D_Q, VR_Q, reg_2_response_matrix
+    return D_Q, VR_Q, reg_2_response_matrix
     
-
-
-
-    else 
-        h5write("h5 files/reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
-        global reg_2_raster_path = "h5 files/reg_2_response_matrix.h5"
-        reg_2_distance_path = "h5 files/reg_2_distance.h5"
-        run(`python compute_similarity_multiprocessing.py $reg_2_raster_path 100 $reg_2_distance_path`)
-
-        D_Q = vector_to_symmetric_matrix(h5read("h5 files/reg_2_distance.h5", "distance"), rows)
-        h5write("h5 files/distance_dq.h5", "distance", D_Q)
-
-        D_Q_heatmap = heatmap(D_Q)
-
-        VR_Q = eirene(D_Q, record="all", maxdim=dim)
-        
-
-        png("Trial folders/$date_now/DQ_$rows")
-
-        return D_Q, VR_Q, reg_2_response_matrix
-    end
-    
-    # if (numLayers > 1)
-        
-    #     for i in num_layers
-    #         reg_2_response_matrix = add_normal_random_noise(conn_matrices[i] * reg_1_neu_resp_matrix, 0.05, 0.025)
-    #         #reg_2_response_matrix = add_normal_random_noise(conn_matrix_2 * reg_2_response_matrix, 0.05, 0.025)
-    #     end
-
-    #     h5write("h5 files/reg_2_response_matrix.h5", "raster", copy(transpose(reg_2_response_matrix)))
-    #     global reg_2_raster_path = "h5 files/reg_2_response_matrix.h5"
-    #     reg_2_distance_path = "h5 files/reg_2_distance.h5"
-    #     run(`python compute_similarity_multiprocessing.py $reg_2_raster_path 100 $reg_2_distance_path`)
-
-    #     D_Q = vector_to_symmetric_matrix(h5read("h5 files/reg_2_distance.h5", "distance"), num_reg_2_neurons)
-    #     h5write("h5 files/distance_dq.h5", "distance", D_Q)
-
-    #     D_Q_heatmap = heatmap(D_Q)
-
-    #     VR_Q = eirene(D_Q, record="all", maxdim=dim)
-    #     VR_Q_barcode = barcode(VR_Q, dim=dim)
-
-    #     png("Trial folders/$date_now/DQ")
-
-    #     return D_Q, VR_Q, reg_2_response_matrix
-    # end
 end
 
 function generate_antipodal_conn(rows, connrow)
@@ -326,16 +236,18 @@ function generate_antipodal_conn(rows, connrow)
     return conn_matrix
 end
 
-function generate_conn_matrix(rows, cols, range=5)
+function generate_conn_matrix(rows, cols)
+    
     global num_reg_2_neurons = rows
     conn_matrix = zeros(rows, cols)
+    range = trunc(Int64, cols / 5) 
     
     for row_index in 1:rows
         center = rand(1:cols)
         for index in -range:range
-            col_index = mod((center + index), cols)
+            col_index = mod((center + index - 1), cols) + 1
             if col_index == 0
-                conn_matrix[row_index, col_index + 1] = 1.0
+                conn_matrix[row_index, col_index] = 1.0
             else
                 conn_matrix[row_index, col_index] = 1.0
             end
@@ -357,13 +269,11 @@ end
 
 
 function compute_DQP_DPQ()
-    if isfile("h5 files/conj_rate_distance_($rows).h5")
-        rm("h5 files/conj_rate_distance_($rows).h5")
-    end
-    conj_rate_distance_path = "h5 files/conj_rate_distance_($rows).h5"
     
-    run(`python cross_similarity_multiprocessing.py $reg_1_raster_path $reg_2_raster_path 100 $conj_rate_distance_path`)
-    DQP = h5read("h5 files/conj_rate_distance_($rows).h5", "distance")
+    #conj_rate_distance_path = "output_pop_size_50/trial_1/learning/step_60/conj_rate_distance.h5"
+    
+    #run(`python3 cross_similarity_multiprocessing.py $reg_1_raster_path $reg_2_raster_path 100 $conj_rate_distance_path`)
+    DQP = h5read("output_pop_size_50/trial_1/learning/step_60/conj_rate_distance.h5", "distance")
     DPQ = copy(transpose(DQP))
     
     return DQP, DPQ
@@ -415,7 +325,7 @@ end
 function save_barcode(barcode, file_name)
     plot_barcode(barcode, xlims=(0,1))
 
-    png("Trial folders/$date_now/($file_name)_($rows")
+    png("output_pop_size_50/trial_1/barcode/$file_name")
 
 end
 
@@ -423,7 +333,7 @@ end
 function analogous_bars(VRP, DP, VRQ, DQ, WP, witness_bar)
     extension_P, extension_Q = ext.run_similarity_analogous(VR_P = VRP, D_P = DP, VR_Q = VRQ, D_Q = DQ, W_PQ = WP, W_PQ_bar = witness_bar, dim=1 )
     plot_analogous_bars(extension_P, extension_Q, xlims=(0,1))
-    png("Trial folders/$date_now/analogous_bars_$rows")
+    png("output_pop_size_50/trial_1/barcode/analogous_bars")
 end
 
 
